@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  /* The signature TUF dark background */
+  background-color: #0f0f0f; 
+  color: #e5e5e5;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Custom Scrollbar (to make it look like a pro IDE) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f0f0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ef4444; /* Red hover */
+}
+
+/* TUF Style Card Utility */
+.tuf-card {
+  @apply bg-[#1e1e1e] border border-[#333] rounded-xl transition-all duration-300;
+}
+.tuf-card:hover {
+  @apply border-red-500/50 transform -translate-y-1 shadow-lg shadow-red-500/10;
+}
+
+/* Button Utilities */
+.btn-primary {
+  @apply px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)];
+}
+
+.btn-secondary {
+  @apply px-6 py-2.5 bg-[#262626] border border-[#404040] hover:border-gray-300 text-gray-300 hover:text-white rounded-lg transition-all;
+}
