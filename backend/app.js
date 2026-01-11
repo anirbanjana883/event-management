@@ -7,8 +7,12 @@ import hpp from 'hpp';
 
 import AppError from './src/utils/AppError.js';
 import globalErrorHandler from './src/middlewares/errorMiddleware.js';
+
+
+
 import authRouter from './src/routes/authRoutes.js';
 import eventRouter from './src/routes/eventRoutes.js';
+import bookingRouter from './src/routes/bookingRoutes.js'
 
 const app = express();
 
@@ -19,14 +23,18 @@ app.use(cors());
 app.use(express.json({ limit: '10kb' })); 
 app.use(hpp()); 
 
+// Move this UP (Before Routes)
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev')); 
+}
+
 // Routes
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/events',eventRouter)
+app.use('/api/v1/bookings',bookingRouter);
 
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev')); 
-}
+
 
 
 
