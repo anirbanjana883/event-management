@@ -1,6 +1,6 @@
 import express from 'express';
-import { bookTicket, verifyPayment, getMyTickets } from '../controllers/bookingController.js';
-import { protect } from '../middlewares/authMiddleware.js';
+import { bookTicket, verifyPayment, getMyTickets, scanTicket, getTicketDetails } from '../controllers/bookingController.js';
+import { protect, restrictTo } from '../middlewares/authMiddleware.js';
 
 const bookingRouter = express.Router();
 
@@ -14,5 +14,9 @@ bookingRouter.post('/verify', verifyPayment);
 
 
 bookingRouter.get('/my-tickets', getMyTickets);
+
+bookingRouter.get('/:ticketId', getTicketDetails); // with qr
+
+bookingRouter.post('/scan', restrictTo('admin', 'organizer'), scanTicket);
 
 export default bookingRouter;
