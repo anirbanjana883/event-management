@@ -9,6 +9,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import EventDetails from './pages/EventDetails';
 import CreateEvent from './pages/CreateEvent';
+import OrganizerDashboard from './pages/organizer/OrganizerDashboard';
+import ScannerPage from './pages/organizer/ScannerPage';
 
 function App() {
   return (
@@ -36,9 +38,13 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/event/:id" element={<EventDetails />} />
+          <Route path="/events" element={<Home />} />
 
 
           <Route path="/create-event" element={<CreateEvent />} />
+
+          <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+          <Route path="/organizer/scan/:eventId" element={<ScannerPage />} />
         </Routes>
       </div>
     </div>

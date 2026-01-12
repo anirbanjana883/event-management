@@ -9,11 +9,12 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false); // Mobile Menu State
 
   const handleLogout = () => {
-    logout();
-    navigate("/login");
-    setIsOpen(false);
-  };
+    localStorage.removeItem("token");
 
+    localStorage.removeItem("user");
+
+    window.location.href = "/login";
+  };
   return (
     <nav className="sticky top-0 z-50 bg-[#0f0f0f]/90 backdrop-blur-md border-b border-[#333]">
       <div className="container mx-auto px-4 md:px-6 py-4">
