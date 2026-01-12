@@ -6,7 +6,7 @@ import Event from '../models/Event.js';
 import Ticket from '../models/Ticket.js';
 import catchAsync from '../utils/catchAsync.js';
 import AppError from '../utils/AppError.js';
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
 
 const getRazorpayInstance = () => {
   return new Razorpay({
@@ -120,35 +120,52 @@ export const verifyPayment = catchAsync(async (req, res, next) => {
   });
 });
 
-// 3. CANCEL / ROLLBACK (Release Seats)
+// 3. ROLLBACK (User closed popup without paying) - THIS IS THE CODE YOU PASTED
 export const cancelBooking = catchAsync(async (req, res, next) => {
-  const { orderId } = req.body; // We use Order ID to find metadata
-
+  const { orderId } = req.body;
+  
   if (!orderId) return next(new AppError('Order ID required', 400));
 
-  // Fetch Order from Razorpay to see how many seats to release
   try {
       const razorpay = getRazorpayInstance();
       const order = await razorpay.orders.fetch(orderId);
-      
-      // Only rollback if the payment hasn't been paid yet
+
       if (order.status === 'paid') {
           return res.status(200).json({ message: "Order already paid, cannot rollback." });
       }
 
       const { eventId, quantity } = order.notes;
 
-      // Add seats back to Event
       await Event.findByIdAndUpdate(eventId, { $inc: { availableSeats: parseInt(quantity) } });
       
       console.log(`Rolled back ${quantity} seats for Event ${eventId}`);
-
       res.status(200).json({ status: 'success', message: 'Seats released' });
 
   } catch (err) {
       console.error("Rollback Error:", err);
       return next(new AppError('Failed to cancel booking', 500));
   }
+});
+
+// 4. CANCEL CONFIRMED TICKET (User cancels from Dashboard) - NEW FUNCTION
+export const cancelTicket = catchAsync(async (req, res, next) => {
+  const { ticketId } = req.body;
+  const userId = req.user.id;
+
+  const ticket = await Ticket.findOne({ _id: ticketId, user: userId });
+
+  if (!ticket) return next(new AppError('Ticket not found', 404));
+  if (ticket.status === 'cancelled') return next(new AppError('Already cancelled', 400));
+
+  // Mark as cancelled
+  ticket.status = 'cancelled';
+  ticket.qrCode = null; // Remove QR so it can't be used
+  await ticket.save();
+
+  // Give seat back
+  await Event.findByIdAndUpdate(ticket.event, { $inc: { availableSeats: 1 } });
+
+  res.status(200).json({ status: 'success', message: 'Ticket cancelled' });
 });
 
 // 3. Get My Tickets
@@ -210,19 +227,24 @@ export const scanTicket = catchAsync(async (req, res, next) => {
 });
 
 
-// Get Single Ticket Detail (The "Reveal" Action)
 export const getTicketDetails = catchAsync(async (req, res, next) => {
-  const ticket = await Ticket.findOne({ 
-    _id: req.params.ticketId, 
-    user: req.user.id 
-  }).select('+qrCode +qrCodeSignature').populate('event');
+  const ticket = await Ticket.findById(req.params.ticketId)
+    .populate('event')
+    .populate('user')
+    .select('+qrCode'); 
 
   if (!ticket) {
     return next(new AppError('Ticket not found', 404));
   }
 
+  if (ticket.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+     return next(new AppError('You do not have permission to view this ticket', 403));
+  }
+
   res.status(200).json({
     status: 'success',
-    data: { ticket }
+    data: {
+      ticket
+    }
   });
 });
