@@ -6,22 +6,20 @@ import { useAuth } from "../context/AuthContext";
 const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false); // Mobile Menu State
+  const [isOpen, setIsOpen] = useState(false); 
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-
     localStorage.removeItem("user");
-
     window.location.href = "/login";
   };
+
   return (
     <nav className="sticky top-0 z-50 bg-[#0f0f0f]/90 backdrop-blur-md border-b border-[#333]">
       <div className="container mx-auto px-4 md:px-6 py-4">
         <div className="flex justify-between items-center">
           {/* LOGO */}
           <Link to="/" className="flex items-center gap-2 group">
-            {/* Logo Container */}
             <div className="p-1 bg-red-600/10 rounded-full border border-red-500/20 group-hover:bg-red-600/20 transition-colors">
               <img
                 src="/eventloop.png"
@@ -29,14 +27,12 @@ const Navbar = () => {
                 className="w-8 h-8 rounded-full object-cover"
               />
             </div>
-
-            {/* Text */}
             <span className="text-xl font-bold tracking-tight text-white">
               Event<span className="text-red-500">Loop</span>
             </span>
           </Link>
 
-          {/* DESKTOP MENU (Hidden on Mobile) */}
+          {/* DESKTOP MENU */}
           <div className="hidden md:flex items-center gap-6">
             {user ? (
               <>
@@ -45,19 +41,23 @@ const Navbar = () => {
                     <User size={14} className="text-white" />
                   </div>
                   <span className="text-sm font-semibold text-gray-200">
-                    {user.name}
+                    {user.name} <span className="text-xs text-gray-500">({user.role})</span>
                   </span>
                 </div>
 
-                <Link
-                  to="/create-event"
-                  className="hidden md:flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#333] rounded-lg text-sm text-gray-300 hover:text-white hover:border-red-500/50 transition-all"
-                >
-                  <span className="text-red-500 font-bold">+</span> Host Event
-                </Link>
+                {/* --- 1. HIDDEN FOR REGULAR USERS --- */}
+                {user.role === 'organizer' && (
+                  <Link
+                    to="/create-event"
+                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border border-[#333] rounded-lg text-sm text-gray-300 hover:text-white hover:border-red-500/50 transition-all"
+                  >
+                    <span className="text-red-500 font-bold">+</span> Host Event
+                  </Link>
+                )}
+                {/* ----------------------------------- */}
 
                 <Link
-                  to="/dashboard"
+                  to="/dashboard" // This goes to the Gateway (Traffic Cop)
                   className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
                 >
                   <LayoutDashboard size={18} />
@@ -87,7 +87,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* MOBILE MENU BUTTON (Visible only on Mobile) */}
+          {/* MOBILE MENU BUTTON */}
           <button
             className="md:hidden text-gray-400 hover:text-white"
             onClick={() => setIsOpen(!isOpen)}
@@ -107,9 +107,20 @@ const Navbar = () => {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-white">{user.name}</p>
-                    <p className="text-xs text-gray-500">Logged In</p>
+                    <p className="text-xs text-gray-500 capitalize">{user.role}</p>
                   </div>
                 </div>
+
+                {/* --- 2. MOBILE CHECK TOO --- */}
+                {user.role === 'organizer' && (
+                    <Link
+                    to="/create-event"
+                    className="block px-2 py-2 text-red-400 hover:text-white hover:bg-[#1a1a1a] rounded transition-colors"
+                    onClick={() => setIsOpen(false)}
+                    >
+                    + Host Event
+                    </Link>
+                )}
 
                 <Link
                   to="/dashboard"
