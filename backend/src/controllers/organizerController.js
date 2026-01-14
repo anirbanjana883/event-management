@@ -50,9 +50,7 @@ export const getEventDashboardData = catchAsync(async (req, res, next) => {
   });
 });
 
-/* ===================================================== */
-/* 2. QR SCAN CHECK-IN (PRIMARY METHOD) */
-/* ===================================================== */
+/* ================= 2. QR SCAN CHECK-IN (RICH DATA) ================= */
 export const scanTicket = catchAsync(async (req, res, next) => {
   const { qrData } = req.body;
 
@@ -65,6 +63,7 @@ export const scanTicket = catchAsync(async (req, res, next) => {
 
   const { payload, signature } = parsed;
 
+  // 1. Verify Signature
   const expectedSignature = crypto
     .createHmac('sha256', process.env.QR_SECRET)
     .update(JSON.stringify(payload))
@@ -74,37 +73,48 @@ export const scanTicket = catchAsync(async (req, res, next) => {
     return next(new AppError('Forged QR detected', 400));
   }
 
+  // 2. Find Ticket & Populate User Data
   const ticket = await Ticket.findById(payload.ticketId)
-    .populate('event')
-    .populate('user', 'name email');
+    .populate('user', 'name email image') // <--- Fetch Name, Email, & Profile Pic
+    .populate('event', 'title');
 
-  if (!ticket) {
-    return next(new AppError('Invalid ticket', 404));
-  }
+  if (!ticket) return next(new AppError('Invalid ticket', 404));
 
-  if (
-    req.user.role !== 'admin' &&
-    ticket.event.organizer.toString() !== req.user.id
-  ) {
+  // 3. Check Ownership & Permissions
+  if (req.user.role !== 'admin' && ticket.event.organizer.toString() !== req.user.id) {
     return next(new AppError('Unauthorized', 403));
   }
 
+  // 4. Check Duplicate Entry
   if (ticket.checkInStatus.isCheckedIn) {
-    return next(new AppError('Ticket already used', 409));
+    // RETURN DATA EVEN IF DUPLICATE (To show "Who is this person trying to re-enter?")
+    return res.status(409).json({
+      status: 'fail',
+      message: 'Already Checked In',
+      data: {
+        attendee: ticket.user,
+        ticketId: ticket._id,
+        checkInTime: ticket.checkInStatus.checkInTime
+      }
+    });
   }
 
+  // 5. Mark as Checked In
   ticket.checkInStatus.isCheckedIn = true;
   ticket.checkInStatus.checkInTime = Date.now();
   ticket.checkInStatus.checkedInBy = req.user.id;
   ticket.status = 'used';
-
   await ticket.save();
 
+  // 6. Return Rich Data
   res.status(200).json({
     status: 'success',
     data: {
-      attendee: ticket.user.name,
-      checkedInAt: ticket.checkInStatus.checkInTime
+      ticketId: ticket._id,
+      attendee: ticket.user, // Contains name, email, image
+      amountPaid: ticket.amountPaid,
+      checkInTime: ticket.checkInStatus.checkInTime,
+      type: 'General Admission' // You can make this dynamic if you have ticket types
     }
   });
 });

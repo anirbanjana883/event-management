@@ -2,7 +2,7 @@ import Event from '../models/Event.js';
 import catchAsync from '../utils/catchAsync.js';
 import AppError from '../utils/AppError.js';
 
-/* ================= CREATE EVENT ================= */
+
 /* ================= CREATE EVENT ================= */
 export const createEvent = catchAsync(async (req, res, next) => {
   const {

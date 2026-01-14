@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, Keyboard } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, Keyboard, User, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// 1. FIX IMPORT: Import the service function
+// Import the service function
 import { scanTicket } from '../../services/bookingService'; 
 
 const ScannerPage = () => {
@@ -14,69 +14,94 @@ const ScannerPage = () => {
   const [status, setStatus] = useState('idle'); 
   const [scanResult, setScanResult] = useState(null);
   const [message, setMessage] = useState('Ready to Scan');
-  const [pauseScanner, setPauseScanner] = useState(false); // To stop scanning after success
+  const [pauseScanner, setPauseScanner] = useState(false); 
   
+  // History State (Live Feed)
+  const [scanHistory, setScanHistory] = useState([]);
+
   // Manual Entry State
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualCode, setManualCode] = useState('');
 
-  // 1. Handle Automatic QR Scan (Updated for @yudiel/react-qr-scanner)
+  /* ============================================================ */
+  /* 1. HANDLE CAMERA SCAN (FIXED)                                */
+  /* ============================================================ */
   const handleScan = async (detectedCodes) => {
-    // The new library returns an array of objects
+    // Get the raw string directly from the camera
     const rawValue = detectedCodes?.[0]?.rawValue;
 
     if (!rawValue || status !== 'idle' || pauseScanner) return;
 
     try {
-      setPauseScanner(true); // Pause immediately
-      // const parsedData = JSON.parse(rawValue);
-      // await processTicket(parsedData.ticketId);
+      setPauseScanner(true); // Stop scanning immediately
+      
+      // 🚀 CRITICAL FIX: Do NOT parse JSON here. 
+      // Send the raw string so the signature stays valid.
+      await processTicket(rawValue); 
 
-      await processTicket(rawValue);
     } catch (err) {
       console.error("Scan Error", err);
-      // If valid QR but not JSON, resume scanning
+      // If it's not a valid ticket format, just resume scanning
       setPauseScanner(false);
     }
   };
 
-  // 2. Handle Manual Input Submit
+  /* ============================================================ */
+  /* 2. HANDLE MANUAL INPUT                                       */
+  /* ============================================================ */
   const handleManualSubmit = async (e) => {
     e.preventDefault();
     if (!manualCode.trim()) return;
     
+    // For manual entry, we just send the ID. 
+    // (Note: Backend manualCheckIn endpoint handles IDs differently than QR data)
     await processTicket(manualCode.trim());
     setShowManualInput(false);
     setManualCode('');
   };
 
-  // 3. Centralized Ticket Processing Logic
+  /* ============================================================ */
+  /* 3. PROCESS TICKET (API CALL + HISTORY UPDATE)                */
+  /* ============================================================ */
   const processTicket = async (qrData) => {
     try {
       setStatus('processing');
       setMessage('Verifying...');
 
-      // 2. FIX VARIABLE NAME: Use 'res' consistently
+      // Call Backend
       const res = await scanTicket(qrData);
 
+      // ✅ Success Scenario
       setStatus('success');
-      setScanResult(res.data); // Assuming your service returns response.data
-      setMessage(`GRANTED: ${res.data.attendee}`);
+      setScanResult(res.data);
+      setMessage(`GRANTED: ${res.data.attendee.name}`);
       toast.success("Entry Granted!");
+
+      // Add to Live Feed (Newest on Top)
+      setScanHistory(prev => [res.data, ...prev]);
 
     } catch (err) {
       console.error(err);
+      
+      // ⚠️ Duplicate Scenario
       if (err.response?.status === 409) {
         setStatus('duplicate');
         setMessage('ALREADY SCANNED!');
         toast.error("Duplicate Ticket!");
-      } else {
+        
+        // If backend returns data about who it was (as we updated), show it
+        if(err.response.data.data) {
+             setScanResult(err.response.data.data);
+        }
+      } 
+      // ❌ Invalid/Forged Scenario
+      else {
         setStatus('error');
         setMessage('INVALID TICKET');
         toast.error("Invalid Ticket ID");
       }
     } finally {
-      // Auto-reset after 2.5s
+      // Auto-reset scanner after 2.5 seconds
       setTimeout(resetScanner, 2500);
     }
   };
@@ -96,8 +121,9 @@ const ScannerPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center p-4">
-      {/* Header */}
+    <div className="min-h-screen bg-black text-white flex flex-col items-center p-4 pb-20">
+      
+      {/* --- HEADER --- */}
       <div className="w-full max-w-md flex items-center justify-between mb-6">
         <Link to="/organizer/dashboard" className="p-2 bg-[#222] rounded-full hover:bg-[#333]">
             <ArrowLeft size={20} />
@@ -106,20 +132,17 @@ const ScannerPage = () => {
         <div className="w-10"></div>
       </div>
 
-      {/* Main Scanner Viewport */}
+      {/* --- MAIN SCANNER VIEWPORT --- */}
       <div className={`relative w-full max-w-md aspect-square bg-[#111] rounded-3xl overflow-hidden border-4 transition-all duration-300 ${getBorderColor()}`}>
         
-        {/* 3. FIX SCANNER: Use correct props for new library */}
+        {/* Camera View */}
         {status === 'idle' && !showManualInput && (
              <Scanner 
-                onScan={handleScan} // Use onScan, not onResult
+                onScan={handleScan} 
                 allowMultiple={true}
                 scanDelay={500}
                 paused={pauseScanner}
-                components={{
-                  audio: false, 
-                  finder: false 
-                }}
+                components={{ audio: false, finder: false }}
                 styles={{
                   container: { width: '100%', height: '100%' },
                   video: { objectFit: 'cover' }
@@ -154,7 +177,7 @@ const ScannerPage = () => {
             </div>
         )}
 
-        {/* Status Overlay (Success/Error) */}
+        {/* Result Overlay (Success/Error) */}
         {status !== 'idle' && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in z-30">
                 {status === 'success' && <CheckCircle className="text-green-500 w-24 h-24 mb-4" />}
@@ -162,7 +185,7 @@ const ScannerPage = () => {
                 {status === 'duplicate' && <AlertTriangle className="text-yellow-500 w-24 h-24 mb-4" />}
                 
                 <h3 className="text-2xl font-bold text-center px-4">{message}</h3>
-                {scanResult && <p className="mt-2 text-gray-400">{scanResult.type}</p>}
+                {scanResult && scanResult.type && <p className="mt-2 text-gray-400">{scanResult.type}</p>}
             </div>
         )}
       </div>
@@ -171,16 +194,63 @@ const ScannerPage = () => {
         {showManualInput ? "Enter the alphanumeric ID below the QR code." : "Point camera at attendee's QR code"}
       </p>
 
-      {/* Toggle Manual/Camera Button */}
+      {/* Toggle Button */}
       {!showManualInput && (
         <button 
             onClick={() => setShowManualInput(true)}
-            className="mt-8 flex items-center gap-2 px-6 py-3 bg-[#222] rounded-full hover:bg-[#333] transition"
+            className="mt-6 flex items-center gap-2 px-6 py-3 bg-[#222] rounded-full hover:bg-[#333] transition"
         >
             <Keyboard size={18} />
             Enter Code Manually
         </button>
       )}
+
+      {/* --- LIVE FEED SECTION --- */}
+      <div className="w-full max-w-md mt-10 border-t border-[#222] pt-6">
+        <h3 className="text-gray-400 font-bold mb-4 flex items-center gap-2">
+            <Clock size={16} /> Live Feed
+        </h3>
+
+        {scanHistory.length === 0 ? (
+            <div className="text-center p-8 border border-dashed border-[#333] rounded-xl text-gray-600">
+                No scans yet. Start scanning to see attendees!
+            </div>
+        ) : (
+            <div className="space-y-3">
+                {scanHistory.map((scan, index) => (
+                    <div key={index} className="bg-[#1a1a1a] p-4 rounded-xl border border-[#333] flex items-center justify-between animate-in slide-in-from-top-4 fade-in duration-300">
+                        
+                        <div className="flex items-center gap-3">
+                            {/* Profile Pic or Fallback */}
+                            <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden flex items-center justify-center shrink-0">
+                                {scan.attendee?.image ? (
+                                    <img src={scan.attendee.image} alt={scan.attendee.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <User size={20} className="text-gray-400" />
+                                )}
+                            </div>
+                            
+                            <div>
+                                <h4 className="font-bold text-white text-sm">{scan.attendee?.name || 'Unknown User'}</h4>
+                                <p className="text-xs text-gray-400">{scan.attendee?.email}</p>
+                            </div>
+                        </div>
+
+                        <div className="text-right">
+                             <div className="flex items-center gap-1 text-green-500 text-xs font-bold uppercase mb-1 justify-end">
+                                <CheckCircle size={12} /> Paid ₹{scan.amountPaid}
+                             </div>
+                             <p className="text-xs text-gray-500">
+                                {new Date(scan.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                             </p>
+                        </div>
+
+                    </div>
+                ))}
+            </div>
+        )}
+      </div>
+
     </div>
   );
 };
