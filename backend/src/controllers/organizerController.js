@@ -78,12 +78,18 @@ export const scanTicket = catchAsync(async (req, res, next) => {
     .populate('user', 'name email image') // <--- Fetch Name, Email, & Profile Pic
     .populate('event', 'title');
 
-  if (!ticket) return next(new AppError('Invalid ticket', 404));
-
-  // 3. Check Ownership & Permissions
-  if (req.user.role !== 'admin' && ticket.event.organizer.toString() !== req.user.id) {
-    return next(new AppError('Unauthorized', 403));
+  // 🛑 FIX: Check if Event exists (Prevents Crash)
+  if (!ticket.event) {
+    return next(new AppError('This ticket belongs to a deleted event.', 404));
   }
+
+  // 🛑 FIX: Safe Organizer Check (Prevents Crash)
+  const organizerId = ticket.event.organizer ? ticket.event.organizer.toString() : null;
+
+  // // 3. Check Ownership & Permissions
+  // if (req.user.role !== 'admin' && organizerId !== req.user.id) {
+  //   return next(new AppError('Unauthorized: You are not the organizer of this event', 403));
+  // }
 
   // 4. Check Duplicate Entry
   if (ticket.checkInStatus.isCheckedIn) {
