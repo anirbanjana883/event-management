@@ -66,9 +66,9 @@ const Home = () => {
             Book Tickets
             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
           </a>
-          <Link to="/register" className="btn-secondary">
+          {/* <Link to="/register" className="btn-secondary">
             Sign Up Free
-          </Link>
+          </Link> */}
         </div>
       </section>
 

@@ -28,10 +28,8 @@ export const cancelMyTicket = async (ticketId) => {
 };
 
 // 5. Scan Ticket (Organizer)
-export const scanTicket = async (ticketId) => {
-  // Backend expects a JSON string in 'qrData'
-  const qrData = JSON.stringify({ payload: { ticketId } });
-  const response = await api.post('/organizer/scan', {qrData});
+export const scanTicket = async (qrDataRaw) => {
+  const response = await api.post('/organizer/scan', { qrData: qrDataRaw });
   return response.data;
 };
 

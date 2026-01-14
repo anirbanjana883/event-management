@@ -29,8 +29,10 @@ const ScannerPage = () => {
 
     try {
       setPauseScanner(true); // Pause immediately
-      const parsedData = JSON.parse(rawValue);
-      await processTicket(parsedData.ticketId);
+      // const parsedData = JSON.parse(rawValue);
+      // await processTicket(parsedData.ticketId);
+
+      await processTicket(rawValue);
     } catch (err) {
       console.error("Scan Error", err);
       // If valid QR but not JSON, resume scanning
@@ -49,13 +51,13 @@ const ScannerPage = () => {
   };
 
   // 3. Centralized Ticket Processing Logic
-  const processTicket = async (ticketId) => {
+  const processTicket = async (qrData) => {
     try {
       setStatus('processing');
       setMessage('Verifying...');
 
       // 2. FIX VARIABLE NAME: Use 'res' consistently
-      const res = await scanTicket(ticketId);
+      const res = await scanTicket(qrData);
 
       setStatus('success');
       setScanResult(res.data); // Assuming your service returns response.data
