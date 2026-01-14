@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import UserDashboard from './user/UserDashboard'; 
-import OrganizerDashboard from './organizer/OrganizerDashboard'; 
+import OrganizerDashboard from './organizer/OrganizerDashboard';
+import AdminDashboard from './admin/AdminDashboard'; // <--- IMPORT THIS
 import api from '../services/api';
 
 const Dashboard = () => {
@@ -9,50 +10,34 @@ const Dashboard = () => {
 
   useEffect(() => {
     const checkUserRole = async () => {
-
-    console.log("1. Starting Role Check...");
       try {
-        // Option A: If you stored role in localStorage on login
+        // ... (Keep existing logic to check role)
         const storedUser = JSON.parse(localStorage.getItem('user'));
-
-        console.log("2. Stored User:", storedUser);
-        
         if (storedUser?.role) {
-          setRole(storedUser.role);
-          setLoading(false);
-          return;
+            setRole(storedUser.role);
+        } else {
+            const res = await api.get('/auth/me');
+            setRole(res.data.data.user.role);
         }
-
-        const res = await api.get('/auth/me'); 
-        setRole(res.data.data.user.role);
-        
-        localStorage.setItem('user', JSON.stringify(res.data.data.user));
-
       } catch (err) {
         console.error("Auth check failed", err);
-        // If error, maybe redirect to login?
       } finally {
         setLoading(false);
       }
     };
-
     checkUserRole();
   }, []);
 
-  if (loading) {
-    return (
-        <div className="min-h-screen bg-black flex items-center justify-center text-white">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-red-500 mr-2"></div>
-            Loading your dashboard...
-        </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
 
-  if (role === 'organizer' || role === 'admin') {
-    return <OrganizerDashboard />;
-  }
-
-  return <UserDashboard />;
+  // RENDER BASED ON ROLE
+  return (
+    <div className="min-h-screen bg-black pt-20">
+      {role === 'user' && <UserDashboard />}
+      {role === 'organizer' && <OrganizerDashboard />}
+      {role === 'admin' && <AdminDashboard />} 
+    </div>
+  );
 };
 
 export default Dashboard;

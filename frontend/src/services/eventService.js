@@ -7,9 +7,8 @@ export const getAllEvents = async () => {
 
 export const getEventById = async (id) => {
   const response = await api.get(`/events/${id}`);
-  return response.data; 
+  return response.data;
 };
-
 
 export const createEvent = async (eventData) => {
   const response = await api.post('/events', eventData);

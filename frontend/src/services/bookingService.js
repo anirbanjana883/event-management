@@ -2,39 +2,46 @@ import api from './api';
 
 // 1. Initiate Checkout
 export const initiateCheckout = async (eventId, quantity = 1) => {
-  const response = await api.post('/bookings/checkout', { eventId, quantity });
+  // ⚠️ FIX: Matches backend route '/tickets/book'
+  const response = await api.post('/tickets/book', { eventId, quantity });
   return response.data;
 };
 
 // 2. Verify Payment
 export const verifyPayment = async (paymentData) => {
-  const response = await api.post('/bookings/verify', paymentData);
+  // ⚠️ FIX: Matches backend route '/tickets/verify'
+  const response = await api.post('/tickets/verify', paymentData);
   return response.data;
 };
 
-// 3. Rollback (When Payment Popup is Closed)
-export const cancelBooking = async (orderId) => {
-  const response = await api.post('/bookings/cancel', { orderId });
-  return response.data;
-};
-
-// 4. NEW: Cancel Confirmed Ticket (User Dashboard)
-export const cancelMyTicket = async (ticketId) => {
-  const response = await api.post('/bookings/cancel-ticket', { ticketId });
-  return response.data;
-};
-
+// 3. Get My Tickets
 export const getMyTickets = async () => {
-  const response = await api.get('/bookings/my-tickets');
+  // ⚠️ FIX: Matches backend route '/tickets/my-tickets'
+  const response = await api.get('/tickets/my-tickets');
   return response.data;
+};
+
+// 4. Cancel Ticket
+export const cancelMyTicket = async (ticketId) => {
+  const response = await api.post('/tickets/cancel-ticket', { ticketId });
+  return response.data;
+};
+
+// 5. Scan Ticket (Organizer)
+export const scanTicket = async (ticketId) => {
+  // Backend expects a JSON string in 'qrData'
+  const qrData = JSON.stringify({ payload: { ticketId } });
+  const response = await api.post('/organizer/scan', {qrData});
+  return response.data;
+};
+
+export const cancelBooking = async (orderId) => {
+  return { success: true };
 };
 
 export const getTicketDetails = async (ticketId) => {
-  const response = await api.get(`/bookings/ticket/${ticketId}`);
-  return response.data;
-};
-
-export const scanTicket = async (ticketId) => {
-  const response = await api.post('/bookings/scan', { ticketId });
-  return response.data;
+  // Temporary workaround: fetch all and find the specific one
+  const response = await api.get('/tickets/my-tickets');
+  const ticket = response.data.data.tickets.find((t) => t._id === ticketId);
+  return { data: { ticket } };
 };

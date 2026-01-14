@@ -8,31 +8,31 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkUserLoggedIn();
-  }, []);
-
-  const checkUserLoggedIn = () => {
     const token = localStorage.getItem('token');
-    const name = localStorage.getItem('userName'); // <--- Retrieve Name
+    // ⚠️ FIXED: Retrieve full user details, not just name
+    const storedUser = localStorage.getItem('user'); 
 
-    if (token) {
-      setUser({ token, name: name || 'User' }); 
+    if (token && storedUser) {
+      setUser(JSON.parse(storedUser));
     }
     setLoading(false);
-  };
+  }, []);
 
   const login = (token, userData) => {
     localStorage.setItem('token', token);
-    localStorage.setItem('userName', userData.name); // <--- Save Name
-    setUser({ token, name: userData.name });
-    toast.success(`Welcome back, ${userData.name}! 👋`);
+    // ⚠️ FIXED: Save entire user object (id, name, email, ROLE)
+    localStorage.setItem('user', JSON.stringify(userData)); 
+    setUser(userData);
+    toast.success(`Welcome back, ${userData.name}!`);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('userName'); // <--- Clear Name
+    localStorage.removeItem('user');
     setUser(null);
     toast.success("Logged out successfully");
+    // Optional: Redirect to login
+    window.location.href = '/login'; 
   };
 
   return (

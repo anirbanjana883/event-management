@@ -1,16 +1,40 @@
 import express from 'express';
+import {
+  scanTicket,
+  manualCheckIn,
+  getEventDashboardData,
+  getEventAnalytics
+} from '../controllers/organizerController.js';
+
 import { protect, restrictTo } from '../middlewares/authMiddleware.js';
-import { getEventDashboardData, manualCheckIn } from '../controllers/organizerController.js';
-import { scanTicket } from '../controllers/bookingController.js';
 
-const organiserRouter = express.Router();
+const router = express.Router();
 
-organiserRouter.use(protect);
+router.get(
+  '/dashboard/:eventId',
+  protect,
+  restrictTo('organizer', 'admin'),
+  getEventDashboardData
+);
 
-organiserRouter.use(restrictTo('organizer', 'admin'));
+router.post(
+  '/scan',
+  protect,
+  restrictTo('organizer', 'admin'),
+  scanTicket
+);
 
-organiserRouter.get('/dashboard/:eventId', getEventDashboardData); 
-organiserRouter.post('/manual-check-in', manualCheckIn); 
-organiserRouter.post('/scan', scanTicket); 
+router.post(
+  '/manual-checkin',
+  protect,
+  restrictTo('organizer', 'admin'),
+  manualCheckIn
+);
 
-export default organiserRouter;
+router.get(
+  '/analytics/:eventId',
+  protect,
+  restrictTo('organizer', 'admin'),
+  getEventAnalytics
+);
+export default router;

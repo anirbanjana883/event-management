@@ -1,31 +1,18 @@
 import express from 'express';
-import { 
-    bookTicket, 
-    verifyPayment, 
-    getMyTickets, 
-    scanTicket, 
-    getTicketDetails, 
-    cancelBooking,
-    cancelTicket
+import {
+  bookTicket,
+  verifyPayment,
+  getMyTickets,
+  cancelTicket
 } from '../controllers/bookingController.js';
 
-import { protect, restrictTo } from '../middlewares/authMiddleware.js';
+import { protect } from '../middlewares/authMiddleware.js';
 
-const bookingRouter = express.Router();
+const router = express.Router();
 
-bookingRouter.use(protect);
+router.post('/book', protect, bookTicket);
+router.post('/verify', protect, verifyPayment);
+router.get('/my-tickets', protect, getMyTickets);
+router.post('/cancel-ticket', protect, cancelTicket);
 
-
-bookingRouter.post('/checkout', bookTicket);
-bookingRouter.post('/verify', verifyPayment);
-bookingRouter.post('/cancel', cancelBooking);       
-bookingRouter.post('/cancel-ticket', cancelTicket);  
-
-bookingRouter.get('/my-tickets', getMyTickets);
-
-
-bookingRouter.get('/ticket/:ticketId', getTicketDetails); 
-
-bookingRouter.post('/scan', restrictTo('admin', 'organizer'), scanTicket);
-
-export default bookingRouter;
+export default router;

@@ -1,19 +1,23 @@
 import express from 'express';
-import { getAllEvents, createEvent, getEvent } from '../controllers/eventController.js';
+import {
+  createEvent,
+  getAllEvents,
+  getEvent,
+  updateEvent,
+  deleteEvent
+} from '../controllers/eventController.js';
+
 import { protect, restrictTo } from '../middlewares/authMiddleware.js';
 
-const eventRouter = express.Router();
+const router = express.Router();
 
+// Public
+router.get('/', getAllEvents);
+router.get('/:id', getEvent);
 
-eventRouter.get('/', getAllEvents);
-eventRouter.get('/:id', getEvent);
+// Organizer / Admin
+router.post('/', protect, restrictTo('organizer', 'admin'), createEvent);
+router.patch('/:id', protect, restrictTo('organizer', 'admin'), updateEvent);
+router.delete('/:id', protect, restrictTo('organizer', 'admin'), deleteEvent);
 
-// Protected Routes (Organizer/Admin only)
-eventRouter.post(
-  '/', 
-  protect, 
-  restrictTo('organizer', 'admin'), 
-  createEvent
-);
-
-export default eventRouter;
+export default router;

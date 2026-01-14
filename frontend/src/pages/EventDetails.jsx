@@ -59,12 +59,12 @@ const EventDetails = () => {
       // 4. UPDATE: Pass 'quantity' to the backend
       const response = await initiateCheckout(id, quantity); 
       
-      const { order, key_id } = response.data; 
+      const { order, key } = response.data;
 
       toast.dismiss();
 
       const options = {
-        key: key_id,
+        key: key,
         amount: order.amount, 
         currency: order.currency,
         name: "EventLoop",

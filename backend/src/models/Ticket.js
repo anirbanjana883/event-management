@@ -1,58 +1,71 @@
 import mongoose from 'mongoose';
 
-const ticketSchema = new mongoose.Schema({
-  event: {
-    type: mongoose.Schema.ObjectId,
-    ref: 'Event',
-    required: true
-  },
-  user: {
-    type: mongoose.Schema.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  qrCode: {
-    type: String,
-    select: false 
-  },
-  qrCodeSignature: {
-    type: String,
-    select: false,
-    unique: false, // Explicitly false to prevent "Duplicate Key" errors
-    sparse: true   // Safety for older data or manual entries
-  },
-  
-  // Payment Details
-  paymentId: {
-    type: String,
-    required: true, // NEW: Mandatory because we only save after payment
-    index: true     // NEW: Makes searching by Order ID faster (for Cancellation)
-  },
-  amountPaid: {
-    type: Number,
-    required: true
-  },
-  
-  // Status (Default is now CONFIRMED)
-  status: {
-    type: String,
-    enum: ['confirmed', 'cancelled', 'used'], // Removed 'pending' as it's no longer used in DB
-    default: 'confirmed'
-  },
-  
-  // Check-In Logic
-  checkInStatus: {
-    isCheckedIn: { type: Boolean, default: false },
-    checkInTime: Date,
-    checkedInBy: { type: mongoose.Schema.ObjectId, ref: 'User' } 
-  }
-}, {
-  timestamps: true
-});
+const ticketSchema = new mongoose.Schema(
+  {
+    event: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Event',
+      required: true,
+      index: true
+    },
 
-// Compound Indexes for frequent queries
-ticketSchema.index({ event: 1, user: 1 }); // "Has this user bought this event?"
-ticketSchema.index({ paymentId: 1 });      // "Find tickets by Razorpay Order ID"
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true
+    },
+
+    /* ================= QR ================= */
+    qrCode: {
+      type: String,
+      select: false // do not expose unless explicitly asked
+    },
+
+    qrSignature: {
+      type: String,
+      select: false
+    },
+
+    /* ================= PAYMENT ================= */
+    paymentId: {
+      type: String,
+      required: true,
+      index: true
+    },
+
+    amountPaid: {
+      type: Number,
+      required: true
+    },
+
+    /* ================= STATUS ================= */
+    status: {
+      type: String,
+      enum: ['confirmed', 'cancelled', 'used'],
+      default: 'confirmed'
+    },
+
+    /* ================= CHECK-IN ================= */
+    checkInStatus: {
+      isCheckedIn: {
+        type: Boolean,
+        default: false
+      },
+      checkInTime: Date,
+      checkedInBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+// Prevent duplicate ticket per payment
+ticketSchema.index({ paymentId: 1, user: 1 });
 
 const Ticket = mongoose.model('Ticket', ticketSchema);
 export default Ticket;
