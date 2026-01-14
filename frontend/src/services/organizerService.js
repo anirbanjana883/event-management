@@ -10,4 +10,8 @@ export const getAnalytics = async (eventId) => {
   return response.data;
 };
 
+export const getCheckedInAttendees = async (eventId) => {
+  const response = await api.get(`/organizer/events/${eventId}/attendees`);
+  return response.data;
+};
 // Keep your existing scan functions here too if you moved them

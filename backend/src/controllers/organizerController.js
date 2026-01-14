@@ -119,18 +119,23 @@ export const scanTicket = catchAsync(async (req, res, next) => {
   });
 });
 
+
 /* ===================================================== */
-/* 3. MANUAL CHECK-IN (FALLBACK) */
+/* 3. MANUAL CHECK-IN (UPDATED) */
 /* ===================================================== */
 export const manualCheckIn = catchAsync(async (req, res, next) => {
   const { ticketId } = req.body;
 
-  const ticket = await Ticket.findById(ticketId).populate('event');
+  // 1. Find Ticket & Populate User Details (Vital for Frontend)
+  const ticket = await Ticket.findById(ticketId)
+    .populate('event')
+    .populate('user', 'name email image'); // <--- ADDED THIS 👤
 
   if (!ticket) {
     return next(new AppError('Ticket not found', 404));
   }
 
+  // 2. Check Permissions
   if (
     req.user.role !== 'admin' &&
     ticket.event.organizer.toString() !== req.user.id
@@ -138,10 +143,21 @@ export const manualCheckIn = catchAsync(async (req, res, next) => {
     return next(new AppError('Unauthorized', 403));
   }
 
+  // 3. Check Duplicate Entry
   if (ticket.checkInStatus.isCheckedIn) {
-    return next(new AppError('Ticket already used', 400));
+    // Return 409 Conflict with data (so frontend shows who it is)
+    return res.status(409).json({
+      status: 'fail',
+      message: 'Ticket already used',
+      data: {
+        attendee: ticket.user,
+        ticketId: ticket._id,
+        checkInTime: ticket.checkInStatus.checkInTime
+      }
+    });
   }
 
+  // 4. Mark as Used
   ticket.checkInStatus.isCheckedIn = true;
   ticket.checkInStatus.checkInTime = Date.now();
   ticket.checkInStatus.checkedInBy = req.user.id;
@@ -149,11 +165,16 @@ export const manualCheckIn = catchAsync(async (req, res, next) => {
 
   await ticket.save();
 
+  // 5. Send Rich Response (Matching scanTicket structure)
   res.status(200).json({
     status: 'success',
     message: 'Manual check-in successful',
     data: {
-      checkedInAt: ticket.checkInStatus.checkInTime
+      ticketId: ticket._id,
+      attendee: ticket.user, // <--- Frontend needs this for the name!
+      amountPaid: ticket.amountPaid,
+      checkInTime: ticket.checkInStatus.checkInTime,
+      type: 'Manual Entry'
     }
   });
 });
@@ -205,5 +226,32 @@ export const getEventAnalytics = catchAsync(async (req, res, next) => {
     data: {
       stats
     }
+  });
+});
+
+/* ===================================================== */
+/* 4. GET CHECKED-IN USERS (LIVE FEED HISTORY)           */
+/* ===================================================== */
+export const getCheckedInUsers = catchAsync(async (req, res, next) => {
+  const { eventId } = req.params;
+
+  // Find all tickets for this event where checkInStatus is true
+  const checkedInTickets = await Ticket.find({
+    event: eventId,
+    'checkInStatus.isCheckedIn': true
+  })
+  .populate('user', 'name email image') // Get user details
+  .sort({ 'checkInStatus.checkInTime': -1 }); // Newest first
+
+  res.status(200).json({
+    status: 'success',
+    results: checkedInTickets.length,
+    data: checkedInTickets.map(ticket => ({
+      ticketId: ticket._id,
+      attendee: ticket.user,
+      amountPaid: ticket.amountPaid,
+      checkInTime: ticket.checkInStatus.checkInTime,
+      type: ticket.paymentId ? 'QR Scan' : 'Manual' // optional label
+    }))
   });
 });

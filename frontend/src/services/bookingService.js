@@ -43,3 +43,9 @@ export const getTicketDetails = async (ticketId) => {
   const ticket = response.data.data.tickets.find((t) => t._id === ticketId);
   return { data: { ticket } };
 };
+
+export const checkInManually = async (ticketId) => {
+  // Sends plain ID to /manual-checkin
+  const response = await api.post('/organizer/manual-checkin', { ticketId });
+  return response.data;
+};

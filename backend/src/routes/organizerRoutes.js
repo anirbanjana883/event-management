@@ -3,7 +3,8 @@ import {
   scanTicket,
   manualCheckIn,
   getEventDashboardData,
-  getEventAnalytics
+  getEventAnalytics,
+  getCheckedInUsers
 } from '../controllers/organizerController.js';
 
 import { protect, restrictTo } from '../middlewares/authMiddleware.js';
@@ -36,5 +37,12 @@ router.get(
   protect,
   restrictTo('organizer', 'admin'),
   getEventAnalytics
+);
+
+router.get(
+  '/events/:eventId/attendees',
+  protect,
+  restrictTo('organizer', 'admin'),
+  getCheckedInUsers
 );
 export default router;
