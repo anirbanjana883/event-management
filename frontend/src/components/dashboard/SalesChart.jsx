@@ -3,7 +3,6 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { format, parseISO } from 'date-fns';
 
 const SalesChart = ({ data }) => {
-  // Transform data: ensure it's sorted and formatted
   const chartData = data?.map(item => ({
     date: format(parseISO(item._id), 'MMM d'), // "Jan 14"
     sales: item.ticketsSold,

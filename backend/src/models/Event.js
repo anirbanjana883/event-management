@@ -64,9 +64,7 @@ const eventSchema = new mongoose.Schema(
   }
 );
 
-/* ================= DATA INTEGRITY ================= */
 
-// Ensure availableSeats never exceeds totalSeats
 eventSchema.pre('save', function (next) {
   if (this.availableSeats > this.totalSeats) {
     this.availableSeats = this.totalSeats;

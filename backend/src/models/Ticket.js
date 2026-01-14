@@ -16,10 +16,9 @@ const ticketSchema = new mongoose.Schema(
       index: true
     },
 
-    /* ================= QR ================= */
     qrCode: {
       type: String,
-      select: false // do not expose unless explicitly asked
+      select: false 
     },
 
     qrSignature: {
@@ -27,7 +26,7 @@ const ticketSchema = new mongoose.Schema(
       select: false
     },
 
-    /* ================= PAYMENT ================= */
+
     paymentId: {
       type: String,
       required: true,
@@ -39,14 +38,14 @@ const ticketSchema = new mongoose.Schema(
       required: true
     },
 
-    /* ================= STATUS ================= */
+
     status: {
       type: String,
       enum: ['confirmed', 'cancelled', 'used'],
       default: 'confirmed'
     },
 
-    /* ================= CHECK-IN ================= */
+
     checkInStatus: {
       isCheckedIn: {
         type: Boolean,
@@ -64,7 +63,7 @@ const ticketSchema = new mongoose.Schema(
   }
 );
 
-// Prevent duplicate ticket per payment
+
 ticketSchema.index({ paymentId: 1, user: 1 });
 
 const Ticket = mongoose.model('Ticket', ticketSchema);

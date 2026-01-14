@@ -37,15 +37,12 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-/* ================= PASSWORD HASH ================= */
-userSchema.pre('save', async function () {
-  // If password is not modified, just return
-  if (!this.isModified('password')) return;
 
-  // Hash the password
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password, 12);
 });
-/* ================= PASSWORD CHECK ================= */
+
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword
@@ -53,7 +50,7 @@ userSchema.methods.correctPassword = async function (
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-/* ================= JWT INVALIDATION ================= */
+
 userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
     const changedTimestamp = parseInt(

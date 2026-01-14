@@ -4,10 +4,6 @@ import mongoose from 'mongoose';
 import app from './app.js';
 import connectDB from './src/config/db.js';
 
-//  IMPORT TICKET MODEL FOR THE FIX
-// import Ticket from './src/models/Ticket.js';
-
-
 connectDB();
 
 //  TEMPORARY FIX: DELETE THE RESTRICTION ON CONNECT
@@ -31,7 +27,6 @@ const server = app.listen(PORT, () => {
 });
 
 
-
 process.on('unhandledRejection', (err) => {
   console.error('UNHANDLED REJECTION! Shutting down...');
   console.error(err.name, err.message);
@@ -40,7 +35,6 @@ process.on('unhandledRejection', (err) => {
     process.exit(1);
   });
 });
-
 
 
 process.on('uncaughtException', (err) => {

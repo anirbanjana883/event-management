@@ -3,7 +3,7 @@ import User from '../models/User.js';
 import catchAsync from '../utils/catchAsync.js';
 import AppError from '../utils/AppError.js';
 
-/* ================= PROTECT ROUTES ================= */
+
 export const protect = catchAsync(async (req, res, next) => {
   let token;
 
@@ -19,19 +19,13 @@ export const protect = catchAsync(async (req, res, next) => {
       new AppError('You are not logged in. Please log in to get access.', 401)
     );
   }
-
-  // Verify token
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-  // Check if user still exists
   const currentUser = await User.findById(decoded.id);
   if (!currentUser) {
     return next(
       new AppError('The user belonging to this token no longer exists.', 401)
     );
   }
-
-  // Check if user changed password after token was issued
   if (currentUser.changedPasswordAfter(decoded.iat)) {
     return next(
       new AppError('Password recently changed. Please log in again.', 401)
@@ -42,7 +36,7 @@ export const protect = catchAsync(async (req, res, next) => {
   next();
 });
 
-/* ================= ROLE RESTRICTION ================= */
+
 export const restrictTo = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {

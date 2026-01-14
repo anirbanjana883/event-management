@@ -11,9 +11,8 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
-/* ===================================================== */
-/* RAZORPAY WEBHOOK */
-/* ===================================================== */
+
+
 export const razorpayWebhook = async (req, res) => {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
@@ -45,7 +44,7 @@ export const razorpayWebhook = async (req, res) => {
     return res.status(200).json({ received: true });
   }
 
-  // Idempotency
+
   const existing = await Ticket.findOne({ paymentId });
   if (existing) {
     return res.status(200).json({ received: true });

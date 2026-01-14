@@ -4,11 +4,8 @@ import Ticket from '../models/Ticket.js';
 import catchAsync from '../utils/catchAsync.js';
 import AppError from '../utils/AppError.js';
 
-/* ===================================================== */
-/* 1. GET SYSTEM STATS (GOD MODE) */
-/* ===================================================== */
+
 export const getSystemStats = catchAsync(async (req, res, next) => {
-  // Parallel execution for speed
   const [userCount, eventCount, ticketStats] = await Promise.all([
     User.countDocuments(),
     Event.countDocuments(),
@@ -37,9 +34,8 @@ export const getSystemStats = catchAsync(async (req, res, next) => {
   });
 });
 
-/* ===================================================== */
-/* 2. GET ALL USERS */
-/* ===================================================== */
+
+
 export const getAllUsers = catchAsync(async (req, res, next) => {
   const users = await User.find().select('-password').sort('-createdAt');
 
@@ -50,17 +46,13 @@ export const getAllUsers = catchAsync(async (req, res, next) => {
   });
 });
 
-/* ===================================================== */
-/* 3. DELETE USER (BAN HAMMER) */
-/* ===================================================== */
+
 export const deleteUser = catchAsync(async (req, res, next) => {
   const user = await User.findByIdAndDelete(req.params.id);
 
   if (!user) {
     return next(new AppError('User not found', 404));
   }
-
-  // Optional: Also delete their events? For now, keep it simple.
 
   res.status(204).json({
     status: 'success',

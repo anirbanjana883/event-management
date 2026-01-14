@@ -4,9 +4,7 @@ import Event from '../models/Event.js';
 import catchAsync from '../utils/catchAsync.js';
 import AppError from '../utils/AppError.js';
 
-/* ===================================================== */
-/* 1. EVENT DASHBOARD (STATS + ATTENDEES) */
-/* ===================================================== */
+
 export const getEventDashboardData = catchAsync(async (req, res, next) => {
   const { eventId } = req.params;
 
@@ -50,7 +48,8 @@ export const getEventDashboardData = catchAsync(async (req, res, next) => {
   });
 });
 
-/* ================= 2. QR SCAN CHECK-IN (RICH DATA) ================= */
+
+
 export const scanTicket = catchAsync(async (req, res, next) => {
   const { qrData } = req.body;
 
@@ -63,7 +62,7 @@ export const scanTicket = catchAsync(async (req, res, next) => {
 
   const { payload, signature } = parsed;
 
-  // 1. Verify Signature
+
   const expectedSignature = crypto
     .createHmac('sha256', process.env.QR_SECRET)
     .update(JSON.stringify(payload))
@@ -73,9 +72,9 @@ export const scanTicket = catchAsync(async (req, res, next) => {
     return next(new AppError('Forged QR detected', 400));
   }
 
-  // 2. Find Ticket & Populate User Data
+
   const ticket = await Ticket.findById(payload.ticketId)
-    .populate('user', 'name email image') // <--- Fetch Name, Email, & Profile Pic
+    .populate('user', 'name email image') 
     .populate('event', 'title');
 
   // 🛑 FIX: Check if Event exists (Prevents Crash)
@@ -91,9 +90,7 @@ export const scanTicket = catchAsync(async (req, res, next) => {
   //   return next(new AppError('Unauthorized: You are not the organizer of this event', 403));
   // }
 
-  // 4. Check Duplicate Entry
   if (ticket.checkInStatus.isCheckedIn) {
-    // RETURN DATA EVEN IF DUPLICATE (To show "Who is this person trying to re-enter?")
     return res.status(409).json({
       status: 'fail',
       message: 'Already Checked In',
@@ -105,43 +102,37 @@ export const scanTicket = catchAsync(async (req, res, next) => {
     });
   }
 
-  // 5. Mark as Checked In
   ticket.checkInStatus.isCheckedIn = true;
   ticket.checkInStatus.checkInTime = Date.now();
   ticket.checkInStatus.checkedInBy = req.user.id;
   ticket.status = 'used';
   await ticket.save();
 
-  // 6. Return Rich Data
   res.status(200).json({
     status: 'success',
     data: {
       ticketId: ticket._id,
-      attendee: ticket.user, // Contains name, email, image
+      attendee: ticket.user, 
       amountPaid: ticket.amountPaid,
       checkInTime: ticket.checkInStatus.checkInTime,
-      type: 'General Admission' // You can make this dynamic if you have ticket types
+      type: 'General Admission' 
     }
   });
 });
 
 
-/* ===================================================== */
-/* 3. MANUAL CHECK-IN (UPDATED) */
-/* ===================================================== */
+
 export const manualCheckIn = catchAsync(async (req, res, next) => {
   const { ticketId } = req.body;
 
-  // 1. Find Ticket & Populate User Details (Vital for Frontend)
   const ticket = await Ticket.findById(ticketId)
     .populate('event')
-    .populate('user', 'name email image'); // <--- ADDED THIS 👤
+    .populate('user', 'name email image'); 
 
   if (!ticket) {
     return next(new AppError('Ticket not found', 404));
   }
 
-  // 2. Check Permissions
   if (
     req.user.role !== 'admin' &&
     ticket.event.organizer.toString() !== req.user.id
@@ -149,9 +140,7 @@ export const manualCheckIn = catchAsync(async (req, res, next) => {
     return next(new AppError('Unauthorized', 403));
   }
 
-  // 3. Check Duplicate Entry
   if (ticket.checkInStatus.isCheckedIn) {
-    // Return 409 Conflict with data (so frontend shows who it is)
     return res.status(409).json({
       status: 'fail',
       message: 'Ticket already used',
@@ -163,7 +152,6 @@ export const manualCheckIn = catchAsync(async (req, res, next) => {
     });
   }
 
-  // 4. Mark as Used
   ticket.checkInStatus.isCheckedIn = true;
   ticket.checkInStatus.checkInTime = Date.now();
   ticket.checkInStatus.checkedInBy = req.user.id;
@@ -171,13 +159,12 @@ export const manualCheckIn = catchAsync(async (req, res, next) => {
 
   await ticket.save();
 
-  // 5. Send Rich Response (Matching scanTicket structure)
   res.status(200).json({
     status: 'success',
     message: 'Manual check-in successful',
     data: {
       ticketId: ticket._id,
-      attendee: ticket.user, // <--- Frontend needs this for the name!
+      attendee: ticket.user, 
       amountPaid: ticket.amountPaid,
       checkInTime: ticket.checkInStatus.checkInTime,
       type: 'Manual Entry'
@@ -186,13 +173,9 @@ export const manualCheckIn = catchAsync(async (req, res, next) => {
 });
 
 
-/* ===================================================== */
-/* 4. GET EVENT ANALYTICS (CHART DATA) */
-/* ===================================================== */
 export const getEventAnalytics = catchAsync(async (req, res, next) => {
   const { eventId } = req.params;
 
-  // 1. Verify Ownership
   const event = await Event.findOne({
     _id: eventId,
     organizer: req.user.id
@@ -202,7 +185,6 @@ export const getEventAnalytics = catchAsync(async (req, res, next) => {
     return next(new AppError('Event not found or unauthorized', 403));
   }
 
-  // 2. Aggregate Sales by Date (Last 30 Days)
   const stats = await Ticket.aggregate([
     {
       $match: {
@@ -220,12 +202,9 @@ export const getEventAnalytics = catchAsync(async (req, res, next) => {
         revenue: { $sum: "$amountPaid" }
       }
     },
-    { $sort: { _id: 1 } } // Sort by date ascending
+    { $sort: { _id: 1 } } 
   ]);
 
-  // 3. Fill in missing dates (Zero sales days)
-  // This logic is usually better handled on frontend, 
-  // but sending raw data is fine for now.
 
   res.status(200).json({
     status: 'success',
@@ -235,19 +214,17 @@ export const getEventAnalytics = catchAsync(async (req, res, next) => {
   });
 });
 
-/* ===================================================== */
-/* 4. GET CHECKED-IN USERS (LIVE FEED HISTORY)           */
-/* ===================================================== */
+
+
 export const getCheckedInUsers = catchAsync(async (req, res, next) => {
   const { eventId } = req.params;
 
-  // Find all tickets for this event where checkInStatus is true
   const checkedInTickets = await Ticket.find({
     event: eventId,
     'checkInStatus.isCheckedIn': true
   })
-  .populate('user', 'name email image') // Get user details
-  .sort({ 'checkInStatus.checkInTime': -1 }); // Newest first
+  .populate('user', 'name email image')
+  .sort({ 'checkInStatus.checkInTime': -1 }); 
 
   res.status(200).json({
     status: 'success',
@@ -257,7 +234,7 @@ export const getCheckedInUsers = catchAsync(async (req, res, next) => {
       attendee: ticket.user,
       amountPaid: ticket.amountPaid,
       checkInTime: ticket.checkInStatus.checkInTime,
-      type: ticket.paymentId ? 'QR Scan' : 'Manual' // optional label
+      type: ticket.paymentId ? 'QR Scan' : 'Manual' 
     }))
   });
 });

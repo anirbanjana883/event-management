@@ -3,7 +3,7 @@ import catchAsync from '../utils/catchAsync.js';
 import AppError from '../utils/AppError.js';
 
 
-/* ================= CREATE EVENT ================= */
+
 export const createEvent = catchAsync(async (req, res, next) => {
   const {
     title,
@@ -22,10 +22,10 @@ export const createEvent = catchAsync(async (req, res, next) => {
     location,
     price,
     totalSeats,
-    availableSeats: totalSeats, // Start with full availability
+    availableSeats: totalSeats, 
+    
     image,
     organizer: req.user.id
-    // NOTE: 'isActive' is not listed here, so it defaults to true (from Model)
   });
 
   res.status(201).json({
@@ -36,7 +36,7 @@ export const createEvent = catchAsync(async (req, res, next) => {
   });
 });
 
-/* ================= GET ALL EVENTS (PUBLIC) ================= */
+
 export const getAllEvents = catchAsync(async (req, res, next) => {
   const events = await Event.find({ isActive: true }) 
     .sort({ date: 1 })
@@ -51,7 +51,7 @@ export const getAllEvents = catchAsync(async (req, res, next) => {
   });
 });
 
-/* ================= GET SINGLE EVENT ================= */
+
 export const getEvent = catchAsync(async (req, res, next) => {
   const event = await Event.findById(req.params.id).populate(
     'organizer',
@@ -70,7 +70,7 @@ export const getEvent = catchAsync(async (req, res, next) => {
   });
 });
 
-/* ================= UPDATE EVENT ================= */
+
 export const updateEvent = catchAsync(async (req, res, next) => {
   const event = await Event.findById(req.params.id);
 
@@ -78,7 +78,7 @@ export const updateEvent = catchAsync(async (req, res, next) => {
     return next(new AppError('Event not found', 404));
   }
 
-  // Only organizer or admin
+
   if (
     event.organizer.toString() !== req.user.id &&
     req.user.role !== 'admin'
@@ -97,7 +97,7 @@ export const updateEvent = catchAsync(async (req, res, next) => {
   });
 });
 
-/* ================= DELETE EVENT (SOFT) ================= */
+
 export const deleteEvent = catchAsync(async (req, res, next) => {
   const event = await Event.findById(req.params.id);
 

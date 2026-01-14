@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 const TicketModal = ({ ticketId, onClose }) => {
   const [ticketDetail, setTicketDetail] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false); // New Error State
+  const [error, setError] = useState(false); 
   const [isRevealed, setIsRevealed] = useState(false);
 
   useEffect(() => {
@@ -26,7 +26,6 @@ const TicketModal = ({ ticketId, onClose }) => {
     if (ticketId) fetchTicketDetails();
   }, [ticketId]);
 
-  // Don't render anything if there's no ID
   if (!ticketId) return null;
 
   return (

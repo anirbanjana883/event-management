@@ -3,7 +3,6 @@ import User from '../models/User.js';
 import catchAsync from '../utils/catchAsync.js';
 import AppError from '../utils/AppError.js';
 
-/* ================= HELPERS ================= */
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -25,8 +24,6 @@ const createSendToken = (user, statusCode, res) => {
   });
 };
 
-/* ================= REGISTER ================= */
-
 export const register = catchAsync(async (req, res, next) => {
   const { name, email, password, role } = req.body;
 
@@ -39,13 +36,12 @@ export const register = catchAsync(async (req, res, next) => {
     name,
     email,
     password,
-    role // admin creation should be restricted later
+    role 
   });
 
   createSendToken(newUser, 201, res);
 });
 
-/* ================= LOGIN ================= */
 
 export const login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
@@ -63,7 +59,6 @@ export const login = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
-/* ================= GET ME ================= */
 
 export const getMe = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id);

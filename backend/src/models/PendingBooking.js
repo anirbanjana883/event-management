@@ -43,7 +43,7 @@ const pendingBookingSchema = new mongoose.Schema(
   }
 );
 
-// Auto-expire abandoned bookings (15 min)
+
 pendingBookingSchema.index(
   { createdAt: 1 },
   { expireAfterSeconds: 900 }

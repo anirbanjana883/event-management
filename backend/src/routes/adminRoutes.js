@@ -8,7 +8,7 @@ import { protect, restrictTo } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// Protect ALL routes for Admin only
+
 router.use(protect, restrictTo('admin'));
 
 router.get('/stats', getSystemStats);
