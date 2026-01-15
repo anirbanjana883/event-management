@@ -12,7 +12,6 @@ const signToken = (id) => {
 
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
-
   user.password = undefined;
 
   res.status(statusCode).json({
@@ -24,17 +23,21 @@ const createSendToken = (user, statusCode, res) => {
   });
 };
 
+
 export const register = catchAsync(async (req, res, next) => {
   const { name, email, password, role } = req.body;
 
-  const existingUser = await User.findOne({ email });
+  // 🛑 FIX: Trim hidden spaces from mobile keyboards
+  const cleanEmail = email ? email.toLowerCase().trim() : '';
+
+  const existingUser = await User.findOne({ email: cleanEmail });
   if (existingUser) {
     return next(new AppError('Email already in use', 400));
   }
 
   const newUser = await User.create({
     name,
-    email,
+    email: cleanEmail, // Save the clean version
     password,
     role 
   });
@@ -50,7 +53,10 @@ export const login = catchAsync(async (req, res, next) => {
     return next(new AppError('Please provide email and password', 400));
   }
 
-  const user = await User.findOne({ email }).select('+password');
+  // 🛑 FIX: Trim hidden spaces here too
+  const cleanEmail = email.toLowerCase().trim();
+
+  const user = await User.findOne({ email: cleanEmail }).select('+password');
 
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new AppError('Incorrect email or password', 401));
