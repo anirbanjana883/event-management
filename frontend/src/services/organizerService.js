@@ -5,8 +5,9 @@ export const getDashboardStats = async (eventId) => {
   return response.data;
 };
 
-export const getAnalytics = async (eventId) => {
-  const response = await api.get(`/organizer/analytics/${eventId}`);
+export const getEventStats = async (eventId) => {
+  // 👇 Correct URL matching your backend route
+  const response = await api.get(`/organizer/events/${eventId}/analytics`);
   return response.data;
 };
 

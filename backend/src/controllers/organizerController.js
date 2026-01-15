@@ -176,40 +176,75 @@ export const manualCheckIn = catchAsync(async (req, res, next) => {
 export const getEventAnalytics = catchAsync(async (req, res, next) => {
   const { eventId } = req.params;
 
+  // 1. Find Event (Your existing logic is great here)
   const event = await Event.findOne({
     _id: eventId,
-    organizer: req.user.id
+    organizer: req.user.role === 'admin' ? { $exists: true } : req.user.id
   });
 
-  if (!event && req.user.role !== 'admin') {
+  if (!event) {
     return next(new AppError('Event not found or unauthorized', 403));
   }
 
-  const stats = await Ticket.aggregate([
+  // 2. AGGREGATION A: All-Time Summary (For KPI Cards)
+  // We remove the date filter here to get TRUE total revenue
+  const summaryStats = await Ticket.aggregate([
+    {
+      $match: {
+        event: event._id,
+        status: 'confirmed' // Matches your status logic
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: '$amountPaid' },
+        totalTicketsSold: { $sum: 1 },
+        avgTicketPrice: { $avg: '$amountPaid' },
+        // Count how many people have checked in
+        totalCheckedIn: {
+          $sum: { $cond: [{ $eq: ['$checkInStatus.isCheckedIn', true] }, 1, 0] }
+        }
+      }
+    }
+  ]);
+
+  // 3. AGGREGATION B: Last 30 Days (For the Line Chart)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const dailySales = await Ticket.aggregate([
     {
       $match: {
         event: event._id,
         status: 'confirmed',
-        createdAt: {
-          $gte: new Date(new Date().setDate(new Date().getDate() - 30)) // Last 30 days
-        }
+        createdAt: { $gte: thirtyDaysAgo } // Only last 30 days
       }
     },
     {
       $group: {
         _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-        ticketsSold: { $sum: 1 },
+        salesCount: { $sum: 1 }, // Renamed to match frontend
         revenue: { $sum: "$amountPaid" }
       }
     },
-    { $sort: { _id: 1 } } 
+    { $sort: { _id: 1 } } // Sort Oldest -> Newest
   ]);
 
-
+  // 4. Send structured response
   res.status(200).json({
     status: 'success',
     data: {
-      stats
+      eventTitle: event.title,
+      totalSeats: event.totalSeats || 0,
+      // If no sales yet, return 0s instead of undefined
+      summary: summaryStats[0] || {
+        totalRevenue: 0,
+        totalTicketsSold: 0,
+        totalCheckedIn: 0,
+        avgTicketPrice: 0
+      },
+      dailySales
     }
   });
 });
